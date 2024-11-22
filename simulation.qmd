@@ -1,24 +1,14 @@
 ---
-title: "Craps Simulation"
+title: "simulation"
 format: html
+editor: visual
 author: "Xeng Yang worked with Nicole H. and Dhunuska B."
 ---
 
-
-In this document, you should create, code, and demonstrate each function you described in [`pseudocode.qmd`](pseudocode.qmd).
-File your functions under the appropriate header. 
-Each function should have its own code chunk, which is properly set up with the appropriate programming language indicated.
-I have provided skeleton code chunks for your required functions using R syntax, but you are free to use Python or any other language covered in class. 
-Please delete or fill in my chunks with your own code.
-
-Make sure this document compiles before you submit your answers.
-
-# Helper Functions
-
-## `roll_dice`
-
-```{r}
+```{r include=FALSE, echo=FALSE}
 library(dplyr)
+
+################ helper functions #################
 
 roll_dice <- function() {
   # Input: None
@@ -27,13 +17,7 @@ roll_dice <- function() {
   
   sample(1:6, 2, replace = T) %>% sum()
 }
-```
 
-```{r}
-roll_dice()
-```
-
-```{r}
 appendVectors <- function(roll,outcome,df) { 
 # Input: Die roll and outcome 
 # Output: appended vectors.
@@ -46,12 +30,6 @@ appendVectors <- function(roll,outcome,df) {
   return(df)
 }
 
-# test function
-df <- data.frame()
-appendVectors(5,"Continue",df)
-```
-
-```{r}
 comeOut <- function(roll,df){
 # Input: Die roll 
 # Output: win/loss message
@@ -66,12 +44,6 @@ comeOut <- function(roll,df){
   }
 }
 
-# test function
-df <- data.frame()
-comeOut(7,df)
-```
-
-```{r}
 pointRoll <- function(roll,df){
 # Input: Die roll 
 # Output: win/loss message
@@ -97,15 +69,8 @@ pointRoll <- function(roll,df){
   }
 }
 
-# test function
-df <- data.frame()
-pointRoll(8,df)
-```
+################ main functions #################
 
-# Main Functions
-
-## simulate_craps_game 
-```{r}
 simulate_craps_game <- function() {
   # Input: 
   # Output: 
@@ -123,16 +88,8 @@ simulate_craps_game <- function() {
   } else {
     pointRoll(first_roll,df)
   }
-  
 }
-```
 
-```{r}
-simulate_craps_game()
-```
-
-## `summarize_craps_game`
-```{r}
 summarize_craps_game <- function(df) {
   # Input: data frame from a simulated craps game
   # Output: a single row of data summarizing the game
@@ -147,14 +104,7 @@ summarize_craps_game <- function(df) {
   }
   return(df)
 }
-```
 
-```{r}
-simulate_craps_game() %>% summarize_craps_game()
-```
-
-## `run_craps_simulation`
-```{r}
 run_craps_simulation <- function(N) {
   # Input: an integer N which determines the number of games to simulate
   # Output: a dataframe containing the outcomes of the simulated games
@@ -175,10 +125,64 @@ run_craps_simulation <- function(N) {
 }
 ```
 
-```{r}
-result <- run_craps_simulation(N=5) # demonstrate result
-result
+Below are graphics for the simulated data. I only simulated 1,000 games because my computer is old and couldn't handle much more than that... :\]
+
+```{r echo=FALSE}
+sim <- run_craps_simulation(1000)
+
+library(ggplot2)
+
+ggplot(sim, aes(x = number_of_rolls)) + 
+  geom_bar(fill = "turquoise") +
+  xlab("Number of Rolls")
 ```
 
+```{r echo=FALSE}
+sim$first_roll <- factor(sim$first_roll)
 
+ggplot(sim, aes(x = first_roll)) + 
+  geom_bar(fill = "purple") +
+  xlab("Number of the First Roll")
+```
 
+This plot displays the game outcome based on the number of rolls a game had. Notice that games with one roll had a significantly higher probability of a win, but generally games with more than one roll had a higher chance of losing.
+
+```{r echo=FALSE}
+# plot displaying game outcome based on # of rolls
+ggplot(sim, aes(x = number_of_rolls, fill = game_outcome)) + 
+  geom_bar(position = 'dodge') +
+  xlab("Number of Rolls") +
+  guides(fill=guide_legend(title="Game Outcome"))
+```
+
+I chose to simulate the probability of winning on a don't pass line bet. A don't pass line bet wins if a 2, 3, or 12 is rolled on the first roll. In other words, this bet wins if the player loses on the come out roll.
+
+```{r}
+library(dplyr)
+dpl <- sim %>%
+  filter(number_of_rolls == 1 & game_outcome == "Lose")
+ 
+prob <- nrow(dpl)/nrow(sim)
+prob
+```
+
+Then, I created a for loop to generate 9 more data sets of 1,000 simulations, compute the bet percentage, and display the results in a list.
+
+```{r}
+probVector <- c()
+for (x in 1:9) {
+  sim <- run_craps_simulation(1000)
+  dpl <- sim %>%
+    filter(number_of_rolls == 1 & game_outcome == "Lose")
+  prob <- nrow(dpl)/nrow(sim)
+  probVector <- append(probVector,prob)
+}
+```
+
+The standard deviation for the ten data sets is about 0.01, which is not much variation for 1,000 games. I would guess the standard deviation would be even smaller had I simulated 10,000 games instead of just 1,000.
+
+```{r}
+probVector
+var <- sd(c(prob,probVector))
+var
+```
